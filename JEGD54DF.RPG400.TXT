@@ -1,0 +1,139 @@
+     A*%%TS  SD  19971105  142340  MASON       REL-V3R2M0  5763-PW1             
+     A*%%EC                                                                     
+     A                                      DSPSIZ(24 80 *DS3)                  
+     A                                      PRINT                               
+     A                                      HELP                                
+     A*                                                                         
+     A*  SUBFILE RECORD FORMAT.                                                 
+     A          R JEGD54A                   SFL                                 
+     A*%%TS  SD  19971105  141605  MASON       REL-V3R2M0  5763-PW1             
+     A  44                                  SFLNXTCHG                           
+     A            SOPT           1A  B  7  4                                    
+     A  61                                  DSPATR(PC)                          
+     A  61                                  DSPATR(RI)                          
+     A            STCUST         6Y 0O  7  9EDTCDE(Z)                           
+     A            SNAME         30A  O  7 18                                    
+     A            STMBR         10   O  7 50                                    
+     A            STFDAT         6Y 0O  7 62EDTCDE(Y)                           
+     A            SCHGS          6S 0O  7 72                                    
+     A*                                                                         
+     A*  SUBFILE CONTROL RECORD FORMAT.                                         
+     A          R JEGD54B                   SFLCTL(JEGD54A)                     
+     A*%%TS  SD  19971105  141605  MASON       REL-V3R2M0  5763-PW1             
+     A                                      SFLSIZ(0014)                        
+     A                                      SFLPAG(0014)                        
+     A                                      OVERLAY                             
+     A                                      BLINK                               
+     A                                      CF03                                
+     A                                      CF05                                
+     A                                      CF12                                
+     A                                      ROLLUP                              
+     A                                      ROLLDOWN                            
+     A                                      CSRLOC(ROW        COL)              
+     A  40                                  SFLDSP                              
+     A  41                                  SFLDSPCTL                           
+     A  42                                  SFLINZ                              
+     A  43                                  SFLCLR                              
+     A  46                                  SFLEND(*MORE)                       
+     A            SFRRN          4S 0H                                          
+     A            ROW            3S 0H                                          
+     A            COL            3S 0H                                          
+     A                                  1  2'JEGD54'                            
+     A                                  1 35'J. E. GOOLD'                       
+     A                                      DSPATR(HI)                          
+     A                                  1 70DATE                                
+     A                                      EDTCDE(Y)                           
+     A                                  2 27'DELETE RX-LINK TRACKING DATA'      
+     A                                      DSPATR(HI)                          
+     A                                  2 70TIME                                
+     A                                  4  2'Options:  4=Delete'                
+     A                                      COLOR(BLU)                          
+     A                                  6  3'Opt'                               
+     A                                      DSPATR(HI)                          
+     A                                  6  8'Customer'                          
+     A                                      DSPATR(HI)                          
+     A                                  6 51'Member'                            
+     A                                      DSPATR(HI)                          
+     A                                  6 64'Date'                              
+     A                                      DSPATR(HI)                          
+     A                                  6 18'Name'                              
+     A                                      DSPATR(HI)                          
+     A                                  6 72'Changes'                           
+     A                                      DSPATR(HI)                          
+     A*                                                                         
+     A*  NEW RECORD RECORD.                                                     
+     A          R JEGD54F                                                       
+     A*%%TS  SD  19971021  145657  MASON       REL-V3R2M0  5763-PW1             
+     A                                      CF12                                
+     A                                      BLINK                               
+     A                                      OVERLAY                             
+     A                                      WINDOW(5 8 17 45)                   
+     A                                  1  1'Key new data, press ENTER.'        
+     A                                      DSPATR(HI)                          
+     A                                  3  4'Customer # :'                      
+     A            WTCUST         6  0B  3 18EDTCDE(Z)                           
+     A  71                                  DSPATR(RI PC)                       
+     A                                  5  4'Member Name:'                      
+     A            WTMBR          8   B  5 18                                    
+     A                                  7  4'Req. Files :'                      
+     A            WTREQ          1   B  7 18                                    
+     A                                  9  4'Status . . :'                      
+     A            WTSTAT         1   B  9 18                                    
+     A                                 11  4'Build Type :'                      
+     A            WTFTYP         1   B 11 18                                    
+     A                                 13  4'Build Date :'                      
+     A            WTFDAT         6  0B 13 18EDTCDE(Y)                           
+     A  72                                  DSPATR(RI)                          
+     A  72   N70                            DSPATR(PC)                          
+     A            WMSG          40   O 15  1DSPATR(HI)                          
+     A                                 16  1'F12=Cancel'                        
+     A                                      COLOR(BLU)                          
+     A*                                                                         
+     A*  FOOTER RECORD.                                                         
+     A          R JEGD54C                                                       
+     A*%%TS  SD  19971022  124700  MASON       REL-V3R2M0  5763-PW1             
+     A                                      BLINK                               
+     A                                      CLRL(*ALL)                          
+     A                                      OVERLAY                             
+     A                                 22  3'F3=Exit'                           
+     A                                      COLOR(BLU)                          
+     A                                 22 13'F5=Refresh'                        
+     A                                      COLOR(BLU)                          
+     A*                                                                         
+     A*  DELETION CONFIRMATION PROMPT.                                          
+     A          R JEGD54G                                                       
+     A*%%TS  SD  19971105  142340  MASON       REL-V3R2M0  5763-PW1             
+     A                                      CF12                                
+     A                                      BLINK                               
+     A                                      CLRL(*NO)                           
+     A                                      OVERLAY                             
+     A                                      WINDOW(5 8 4 45)                    
+     A            SRPLY          1A  B  3 31DSPATR(HI)                          
+     A                                      VALUES('Y' 'N' ' ')                 
+     A                                      DFTVAL('Y')                         
+     A                                  2  1'Are you sure you want to delete al-
+     A                                      l pricing'                          
+     A                                      DSPATR(HI)                          
+     A                                  3  1'update data for customer(s)?'      
+     A                                      DSPATR(HI)                          
+      *                                                                         
+      *  MESSAGE SUBFILE RECORD FORMAT.                                         
+     A          R JEGD54D                   SFL                                 
+     A                                      SFLMSGRCD(24)                       
+     A            $$MSGKEY                  SFLMSGKEY                           
+     A            $$STKENT                  SFLPGMQ                             
+      *                                                                         
+      *  MESSAGE SUBFILE CONTROL RECORD FORMAT.                                 
+     A          R JEGD54E                   SFLCTL(JEGD54D)                     
+     A                                      OVERLAY                             
+     A                                      BLINK                               
+     A  39                                  SFLEND                              
+     A                                      SFLDSP                              
+     A                                      SFLDSPCTL                           
+     A                                      SFLSIZ(2)                           
+     A                                      SFLPAG(1)                           
+     A                                      SFLINZ                              
+     A  48                                  SFLCLR                              
+     A            $$STKENT                  SFLPGMQ                             
+                                                                                
+

@@ -1,0 +1,570 @@
+                                                                                
+      * JEGD54 Select a record from FPRXLKTK to edit.                           
+      * Created 10/20/97 by Mason Associates - Sam Pratt                        
+                                                                                
+                                                                                
+      * Indicator usage:   *in39 = SFLEND - on message subfile(see *in46)       
+      *                    *in40 = SFLDSP - display subfile format              
+      *                    *in41 = SFLDSPCTL - display subfile contro format    
+      *                    *in42 = SFLINZ - initialize the subfile              
+      *                    *in43 = SFLCLR - clear the subfile                   
+      *                    *in44 = SFLNXTCHG - flag subfile rec as changed      
+      *                                        (for next READC operation)       
+      *                    *in46 = SFLEND - displays 'More...' or 'Bottom'      
+      *                    *in48 = SFLEND - on message subfile                  
+      *                    *in6x = Subfile field errors.                        
+      *                    *in97 = no record found on DB read operation         
+      *                    *in98 = no record found on DB chain operation        
+      *                    *in99 = no record found on subfile read              
+      *                                                                         
+      *                                                                         
+                                                                                
+      *----------------------------------------------------------               
+                                                                                
+      * Display file.                                                           
+     FJEGD54DF  CF   E             WorkStn SFile(JEGD54A:SfRRN)                 
+     F                                     InfDS($DspInfo)                      
+                                                                                
+      * RX-Link tracking file.                                                  
+     FFPRXLKTK  UF   E           K Disk                                         
+                                                                                
+      * RX-Link totals file.                                                    
+     FFPRXLCHT  UF   E           K Disk                                         
+                                                                                
+      * RX-Link detail file.                                                    
+     FFPRXLCHG  UF   E           K Disk                                         
+                                                                                
+      * RX-Link EDI pricing file.                                               
+     FFPDTLPRC  UF   E             Disk    UsrOpn                               
+                                                                                
+      * Customer master.                                                        
+     FFPCUSMAS  IF   E           K Disk                                         
+                                                                                
+      *----------------------------------------------------------               
+                                                                                
+      * Function key scan codes (hexadecimal).                                  
+     D $FKeys          DS                                                       
+     D  enter                         1A   inz(x'F1')                           
+     D  rollup                        1A   inz(x'F5')                           
+     D  rolldn                        1A   inz(x'F4')                           
+     D  help                          1A   inz(x'F3')                           
+     D  print                         1A   inz(x'F6')                           
+     D  bspace                        1A   inz(x'F8')                           
+     D  clear                         1A   inz(x'BD')                           
+     D  F1                            1A   inz(x'31')                           
+     D  F2                            1A   inz(x'32')                           
+     D  F3                            1A   inz(x'33')                           
+     D  F4                            1A   inz(x'34')                           
+     D  F5                            1A   inz(x'35')                           
+     D  F6                            1A   inz(x'36')                           
+     D  F7                            1A   inz(x'37')                           
+     D  F8                            1A   inz(x'38')                           
+     D  F9                            1A   inz(x'39')                           
+     D  F10                           1A   inz(x'3A')                           
+     D  F11                           1A   inz(x'3B')                           
+     D  F12                           1A   inz(x'3C')                           
+     D  F13                           1A   inz(x'B1')                           
+     D  F14                           1A   inz(x'B2')                           
+     D  F15                           1A   inz(x'B3')                           
+     D  F16                           1A   inz(x'B4')                           
+     D  F17                           1A   inz(x'B5')                           
+     D  F18                           1A   inz(x'B6')                           
+     D  F19                           1A   inz(x'B7')                           
+     D  F20                           1A   inz(x'B8')                           
+     D  F21                           1A   inz(x'B9')                           
+     D  F22                           1A   inz(x'BA')                           
+     D  F23                           1A   inz(x'BB')                           
+     D  F24                           1A   inz(x'BC')                           
+                                                                                
+      * Program status data structure.                                          
+     D $PS             DS                                                       
+     D  $$Program              1     10                                         
+     D  $$Library             81     90                                         
+     D  $$User               254    263                                         
+     D  $$JobDate            270    275                                         
+     D  $$SysDate            276    281                                         
+     D  $$SysTime            282    287                                         
+                                                                                
+      * Display file info data structure.                                       
+     D $DspInfo        DS                                                       
+     D  $$KeyPrs             369    369                                         
+                                                                                
+      * Data structure expected by message API's.                               
+     D $MsgVar         DS                                                       
+     D  $$MsgLen               1      4B 0 inz(30)                              
+     D  $$StkCtr               5      8B 0 inz(0)                               
+     D  $$RtvLen               9     12B 0 inz(0)                               
+     D  $$MsgQln              13     16B 0 inz(0)                               
+     D  $$PgmWtt              17     20B 0 inz(0)                               
+     D  $$MsgID               21     27A                                        
+     D  $$MsgF                28     47A   inz('JEGAPPMSG *LIBL     ')          
+     D  $$MsgType             48     67A   inz('*COMP     ')                    
+     D  $$MsgKey              68     71A   inz(' ')                             
+     D  $$Msg                 71     80A                                        
+     D  $$MsgRmv              81     90A   inz('*ALL')                          
+     D  $$StkEnt              91    100    inz('*         ')                    
+                                                                                
+      * Errors data structure returned by message APIs.                        
+     D $MsgErr         DS                                                       
+     D  $$ProvID               1      4B 0 inz(46)                              
+     D  $$Avail                5      8B 0 inz(0)                               
+     D  $$RtnMsg               9     15                                         
+     D  $$Rsvr                16     16                                         
+     D  $$RtnDta              17     46                                         
+                                                                                
+                                                                                
+      * Data structures used by program roll logic. Must be a unique key.       
+     D $SFKey          DS                                                       
+     D  RtCust                                          inz                     
+                                                                                
+     D $SFTop          DS                                                       
+     D  $$CustT                            like(RtCust) inz                     
+                                                                                
+     D $SFBot          DS                                                       
+     D  $$CustB                            like(RtCust) inz                     
+                                                                                
+      * Member name for FPRXLINK.                                               
+     D                 DS                                                       
+     D  $$Mbr                  1     10    inz('CUST      ')                    
+     D  $$CusNo                       6    overlay($$Mbr:5)                     
+     d                 DS                                                       
+     d PData                   1    203                                         
+     d  Flag                   1      1                                         
+     d  Cust                   4      9                                         
+                                                                                
+      * Stand alone fields.                                                     
+     D chgj            S             80    inz('CHGJOB RUNPTY(xx)')             
+     D ChgRecs         S              1                                         
+     D Cmd             S             80                                         
+     D CmdLen          S             15  5 inz(80)                              
+     D Ctr             S              3  0 inz                                  
+     D Deletions       S              1    inz(*off)                            
+     D Error           S              1    inz(*off)                            
+     D FirstCycle      S              1    inz(*on)                             
+     D FlagSav         S              1                                         
+     D HCust           S                   like(RtCust)                         
+     D pmRtnCode       S              8                                         
+     D Reload          S              1    inz(*off)                            
+     D rmv             S             80    inz('RMVM FPRXLINK MBR(xxxxxxxxxx)') 
+     D SflSize         S              3  0 inz(14)                              
+     D WError          S              1    inz(*off)                            
+                                                                                
+      *----------------------------------------------------------               
+                                                                                
+      * Begin interactive loop.                                                 
+     C                   DoW       $$KeyPrs <> F3 and $$KeyPrs <> F12           
+                                                                                
+                                                                                
+      * Rollup (pagedown), or initial subfile load.                             
+     C                   If        ($$KeyPrs = rollup or Reload = *on)          
+     C                                                and Error = *off          
+     C                   Eval      $SFKey = $SFBot                              
+                                                                                
+      *   see if any records to roll to or load.                                
+     C                   If        Reload = *on                                 
+     C     Key01         SetLL     FPRXLKTK                                     
+     C                   Else                                                   
+     C     Key01         SetGT     FPRXLKTK                                     
+     C                   EndIf                                                  
+     C                   Read      FPRXLKTK                               97    
+                                                                                
+      *   if records, load the subfile.                                         
+     C                   If        *in97 = *off                                 
+     C                   Eval      $SFBot = $SFKey                              
+     C                   ExSr      @RollUp                                      
+     C                   Else                                                   
+     C                   Eval      *in46 = *on                                  
+     C                   If        FirstCycle = *off and Reload = *off          
+     C                   Eval      $$MsgID = 'XA00001'                          
+     C                   ExSr      @SndMsg                                      
+     C                   EndIf                                                  
+     C                   EndIf                                                  
+     C                   Eval      Reload = *off                                
+                                                                                
+     C                   EndIf                                                  
+                                                                                
+      * Rolldown (pageup).                                                      
+     C                   If        $$KeyPrs = rolldn and Error = *off           
+                                                                                
+      *   see if any records to roll to.                                        
+     C                   Eval      $SFKey = $SFTop                              
+     C     Key01         SetLL     FPRXLKTK                                     
+     C                   ReadP     FPRXLKTK                               97    
+                                                                                
+      *   if records, load the subfile.                                         
+     C                   If        *in97 = *off                                 
+     C                   ExSr      @RollDown                                    
+     C                   Else                                                   
+     C                   Eval      $$MsgID = 'XA00001'                          
+     C                   ExSr      @SndMsg                                      
+     C                   EndIf                                                  
+     C                   EndIf                                                  
+                                                                                
+      * Display the screen.                                                     
+                                                                                
+      *   set the subfile keyword indicators. don't display subfile record      
+      *   format if no records were found.                                      
+     C                   Eval      *in41 = *on                                  
+     C                   Eval      *in42 = *off                                 
+     C                   If        Ctr > 0                                      
+     C                   Eval      *in40 = *on                                  
+     C                   Else                                                   
+     C                   Eval      *in40 = *off                                 
+     C                   EndIf                                                  
+                                                                                
+      * Write the footer and message lines, and execute the subfile.            
+     C                   Write     JEGD54C                                      
+     C                   Write     JEGD54E                                      
+     C                   ExFmt     JEGD54B                                      
+     C                   ExSr      @ClrMsg                                      
+                                                                                
+      * Check for user request for exit.                                        
+     C                   If        $$KeyPrs = F3 or $$KeyPrs = F12              
+     C                   If        $$KeyPrs = F3                                
+     C                   Eval      pmRtnCode = 'F3'                             
+     C                   Else                                                   
+     C                   Eval      pmRtnCode = 'F12'                            
+     C                   EndIf                                                  
+     C                   Iter                                                   
+     C                   EndIf                                                  
+                                                                                
+      * If user requests refresh, reload the current subfile page.              
+      * This will discard any changes keyed since last update.                  
+     C                   If        $$KeyPrs = F5                                
+     C                   Eval      Reload = *on                                 
+     C                   Eval      Error = *off                                 
+     C                   Eval      $SFBot = $SFTop                              
+     C                   Iter                                                   
+     C                   EndIf                                                  
+                                                                                
+                                                                                
+      * Process any subfile records that the user changed.                      
+     C                   If        Ctr > 0                                      
+     C                   ExSr      @ReadSfl                                     
+     C                   EndIf                                                  
+                                                                                
+      * End of interactive loop.                                                
+     C                   Eval      FirstCycle = *off                            
+     C                   EndDo                                                  
+                                                                                
+      * End of program.                                                         
+     C                   Eval      *inLR = *on                                  
+     C                   Return                                                 
+                                                                                
+      ***********************************************************               
+     C     *InzSr        BegSr                                                  
+                                                                                
+      * Entry parms. Add as needed. pmRtnCode can be ignored.                   
+     C     *Entry        PList                                                  
+     C                   Parm                    pmRtnCode                      
+                                                                                
+     C     Key01         KList                                                  
+     C                   KFld                    RtCust                         
+                                                                                
+      * Initialize the message subfile.                                         
+     C                   ExSr      @ClrMsg                                      
+                                                                                
+      * Misc. inits.                                                            
+     C                   Eval      *in39 = *on                                  
+     C                   Eval      Reload = *on                                 
+     C                   Eval      $$CustB = *loval                             
+                                                                                
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @ClrMsg       BegSr                                                  
+      * Clear/initialize the message subfile.                                   
+                                                                                
+     C                   Call      'QMHRMVPM'                                   
+     C                   Parm      '*         '  $$StkEnt                       
+     C                   Parm                    $$StkCtr                       
+     C                   Parm      *blanks       $$MsgKey                       
+     C                   Parm      '*ALL'        $$MsgRmv                       
+     C                   Parm                    $MsgErr                        
+                                                                                
+     C                   Eval      *in48 = *on                                  
+     C                   Write     JEGD54E                                      
+     C                   Eval      *in48 = *off                                 
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @ClrSfl       BegSr                                                  
+      * Clear the data subfile.                                                 
+                                                                                
+     C                   Eval      Ctr = 0                                      
+     C                   Clear                   JEGD54A                        
+     C                   Eval      *in61 = *off                                 
+                                                                                
+     C                   Eval      *in43 = *on                                  
+     C                   Write     JEGD54B                                      
+     C                   Eval      *in43 = *off                                 
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @Edits        BegSr                                                  
+      * Validate the subfile data.                                              
+     C                   Eval      *in61 = *off                                 
+                                                                                
+      *  check option value.                                                    
+     C                   If        SOpt <> '4' and SOpt <> ' '                  
+     C                   Eval      *in44 = *on                                  
+     C                   Eval      Error = *on                                  
+     C                   Eval      *in61 = *on                                  
+     C                   Eval      $$MsgID = 'XA00002'                          
+     C                   ExSr      @SndMsg                                      
+     C                   EndIf                                                  
+                                                                                
+     C                   EndSr                                                  
+      ***********************************************************               
+     C     @ReadSfl      BegSr                                                  
+      * Read and process all subfile records that the user changed.             
+                                                                                
+     C                   Eval      ChgRecs = *off                               
+     C                   Eval      Error = *off                                 
+     C                   Eval      Deletions = *off                             
+                                                                                
+      * Screen edits.                                                           
+     C                   ReadC     JEGD54A                                99    
+     C                   DoW       *in99 = *off                                 
+     C                   ExSr      @Edits                                       
+     C                   Eval      *in44 = *on                                  
+     C                   If        SOpt = '4'                                   
+     C                   Eval      Deletions = *on                              
+     C                   EndIf                                                  
+     C                   Update    JEGD54A                                      
+     C                   ReadC     JEGD54A                                99    
+     C                   EndDo                                                  
+                                                                                
+      * If no errors, and pending deletions, send confirmation msg.             
+      *  if not confirmed, set the error flag to skip updates.                  
+     C                   If        Error = *off and Deletions = *on             
+     C                   ExFmt     JEGD54G                                      
+     C                   If        $$KeyPrs = F12 or SRply <> 'Y'               
+     C                   Eval      Error = *on                                  
+     C                   EndIf                                                  
+     C                   Eval      $$KeyPrs = *blanks                           
+     C                   EndIf                                                  
+                                                                                
+      * If no errors, delete the customer's pricing update data.                
+     C                   If        SOpt = '4' and Error = *off                  
+     C                   ReadC     JEGD54A                                99    
+     C                   DoW       *in99 = *off                                 
+                                                                                
+     C                   Eval      *in44 = *off                                 
+     C                   Eval      ChgRecs = *on                                
+     C                   Eval      $SfBot = $SfTop                              
+     C                   Eval      Reload = *on                                 
+                                                                                
+      *   delete detail recs.                                                   
+     C     StCust        SetLL     FPRXLCHG                                     
+     C     StCust        ReadE     FPRXLCHG                               97    
+     C                   DoW       Not *in97                                    
+     C                   Delete    RXLCHG00                                     
+     C     StCust        ReadE     FPRXLCHG                               97    
+     C                   EndDo                                                  
+                                                                                
+      *   delete total rec.                                                     
+     C     StCust        Chain     FPRXLCHT                           97        
+     C                   If        Not *in97                                    
+     C                   Delete    RXLCHT00                                     
+     C                   EndIf                                                  
+                                                                                
+      *   delete tracking rec.                                                  
+     C     StCust        Chain     FPRXLKTK                           97        
+     C                   If        Not *in97                                    
+     C                   Delete    RXLKTK00                                     
+     C                   EndIf                                                  
+                                                                                
+      *   delete EDI file detail recs. must first find the header rec for       
+      *   the cust, then delete all recs until trailer rec found.               
+      *   change job's run priority down to 50, as this may be I/O heavy.       
+     C                   Eval      %subst(chgj:15:2) = '50'                     
+     C                   Eval      CmdLen = %size(chgj)                         
+     C                   Call      'QCMDEXC'                            99      
+     C                   Parm      chgj          Cmd                            
+     C                   Parm                    CmdLen                         
+     C                   Open      FPDTLPRC                                     
+     C                   Read      FPDTLPRC                               97    
+      *      read until correct header found.                                   
+     C                   DoW       Not *in97                                    
+     C                   If        Flag = 'H'                                   
+     C                   Z-Add     0             @Cust                          
+     C                   Move      Cust          @Cust             6 0          
+     C                   If        @Cust = StCust                               
+     C                   Leave                                                  
+     C                   EndIf                                                  
+     C                   EndIf                                                  
+     C                   Read      FPDTLPRC                               97    
+     C                   EndDo                                                  
+      *      delete until trailer found. delete it too.                         
+     C                   DoW       Not *in97                                    
+     C                   Eval      FlagSav = Flag                               
+     C                   Delete    DTLPRC00                                     
+     C                   If        FlagSav = 'T'                                
+     C                   Leave                                                  
+     C                   EndIf                                                  
+     C                   Read      FPDTLPRC                               97    
+     C                   EndDo                                                  
+      *      close file and change job priority back to 20.                     
+     C                   Close     FPDTLPRC                                     
+     C                   Eval      %subst(chgj:15:2) = '20'                     
+     C                   Call      'QCMDEXC'                            99      
+     C                   Parm      chgj          Cmd                            
+     C                   Parm                    CmdLen                         
+                                                                                
+      *   remove members from FPRXLINK.                                         
+     C                   Move(p)   StCust        $$CusNo                        
+     C                   Eval      %subst(rmv:19:10) = $$Mbr                    
+     C                   Eval      CmdLen = %size(rmv)                          
+     C                   Call      'QCMDEXC'                            99      
+     C                   Parm      rmv           Cmd                            
+     C                   Parm                    CmdLen                         
+     C                   Eval      %subst(rmv:19:10) = StMbr                    
+     C                   Eval      CmdLen = %size(rmv)                          
+     C                   Call      'QCMDEXC'                            99      
+     C                   Parm      rmv           Cmd                            
+     C                   Parm                    CmdLen                         
+                                                                                
+      * Send deletion message.                                                  
+     C                   Eval      $$MsgId = 'XA00008'                          
+     C                   MoveL(p)  StCust        $$Msg                          
+     C                   ExSr      @SndMsg                                      
+                                                                                
+     C                   Eval      SOpt = *blank                                
+                                                                                
+      * Update the subfile rec and read the next changed one.                   
+     C                   Update    JEGD54A                                      
+     C                   ReadC     JEGD54A                                99    
+     C                   EndDo                                                  
+     C                   EndIf                                                  
+                                                                                
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @RollDown     BegSr                                                  
+      * Load the subfile backwards for a rolldown request.                      
+      *   if unable to load an entire page, execute @RollUp to load from        
+      *   the beginning.                                                        
+                                                                                
+     C                   ExSr      @ClrSfl                                      
+     C                   Eval      SFRRN = SflSize + 1                          
+     C                   Eval      $SFKey = $SFTop                              
+     C     Key01         SetLL     FPRXLKTK                                     
+     C                   ReadP(n)  FPRXLKTK                               97    
+                                                                                
+      *  load from the database file until the page is filled.                  
+     C                   DoW       *in97 = *off And SFRRN > 1                   
+                                                                                
+     C                   Clear                   JEGD54A                        
+     C                   Eval      StCust = RtCust                              
+     C                   Eval      StMbr = RtMbr                                
+     C                   Eval      StFDat = RtFDat                              
+                                                                                
+      *    get customer name and number of change records.                      
+     C     StCust        Chain     FPCUSMAS                           98        
+     C                   If        Not *in98                                    
+     C                   Eval      SName = ClName                               
+     C                   EndIf                                                  
+                                                                                
+     C     StCust        Chain(n)  FPRXLCHT                           98        
+     C                   If        Not *in98                                    
+     C                   Eval      SChgs = RtToti                               
+     C                   EndIf                                                  
+                                                                                
+      *  if this is the first record loaded, save the key into $SFBot.          
+     C                   If        SFRRN = SflSize + 1                          
+     C                   Eval      $SFBot = $SFKey                              
+     C                   EndIf                                                  
+                                                                                
+      *  save each key into $SFTop.                                             
+     C                   Eval      $SFTop = $SFKey                              
+                                                                                
+      *  decrement the subfile record #(SFRRN) and write the record.            
+     C                   Eval      SFRRN = SFRRN - 1                            
+     C                   Write     JEGD54A                                      
+     C                   Eval      Ctr = Ctr + 1                                
+                                                                                
+     C                   ReadP(n)  FPRXLKTK                               97    
+     C                   EndDo                                                  
+                                                                                
+      *  did we load a full page? if not, execute subroutine @RollUp.           
+      *  if so, set SFLEND indicator.                                           
+     C                   If        SFRRN > 1                                    
+     C                   Eval      $SFBot = $SFTop                              
+     C                   ExSr      @RollUp                                      
+     C                   Else                                                   
+     C                   Eval      $SFKey = $SFBot                              
+     C     Key01         SetGt     FPRXLKTK                                     
+     C                   Read(n)   FPRXLKTK                               97    
+     C                   Eval      *in46 = *in97                                
+     C                   EndIf                                                  
+                                                                                
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @RollUp       BegSr                                                  
+      * Load the subfile for a rollup request or the initial load.              
+                                                                                
+     C                   ExSr      @ClrSfl                                      
+     C                   Eval      SFRRN = 0                                    
+     C                   Eval      $SFKey = $SFBot                              
+     C     Key01         SetLL     FPRXLKTK                                     
+     C                   Read(n)   FPRXLKTK                               97    
+                                                                                
+      *  load from the database file until the page is filled.                  
+     C                   DoW       *in97 = *off And SFRRN < SflSize             
+                                                                                
+     C                   Clear                   JEGD54A                        
+     C                   Eval      StCust = RtCust                              
+     C                   Eval      StMbr = RtMbr                                
+     C                   Eval      StFDat = RtFDat                              
+                                                                                
+      *    get customer name and number of change records.                      
+     C     StCust        Chain     FPCUSMAS                           98        
+     C                   If        Not *in98                                    
+     C                   Eval      SName = ClName                               
+     C                   EndIf                                                  
+                                                                                
+     C     StCust        Chain(n)  FPRXLCHT                           98        
+     C                   If        Not *in98                                    
+     C                   Eval      SChgs = RtToti                               
+     C                   EndIf                                                  
+                                                                                
+      *  if this is the first record loaded, save the key into $SFTop.          
+     C                   If        SFRRN = 0                                    
+     C                   Eval      $SFTop = $SFKey                              
+     C                   EndIf                                                  
+                                                                                
+      *  save each key into $SFBot.                                             
+     C                   Eval      $SFBot = $SFKey                              
+                                                                                
+      *  decrement the subfile record #(SFRRN) and write the record.            
+     C                   Eval      SFRRN = SFRRN + 1                            
+     C                   Write     JEGD54A                                      
+     C                   Eval      Ctr = Ctr + 1                                
+                                                                                
+     C                   Read(n)   FPRXLKTK                               97    
+     C                   EndDo                                                  
+                                                                                
+      *  set SFLEND ('More...') if data after last displayed rec.               
+     C                   Eval      *in46 = *in97                                
+                                                                                
+     C                   EndSr                                                  
+                                                                                
+      ***********************************************************               
+     C     @SndMsg       BegSr                                                  
+      * Call the system API to send a message to the message subfile.           
+                                                                                
+     C                   Call      'QMHSNDPM'                                   
+     C                   Parm                    $$MsgID                        
+     C                   Parm                    $$MsgF                         
+     C                   Parm                    $$Msg                          
+     C                   Parm                    $$MsgLen                       
+     C                   Parm                    $$MsgType                      
+     C                   Parm                    $$StkEnt                       
+     C                   Parm                    $$StkCtr                       
+     C                   Parm                    $$MsgKey                       
+     C                   Parm                    $MsgErr                        
+     C                   EndSr                                                  
+                                                                                
+
