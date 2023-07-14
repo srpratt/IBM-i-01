@@ -1,0 +1,15 @@
+         CREATE TABLE orddtl (
+           ordno      INT NOT NULL,
+           seq        INT NOT NULL,
+           itemno     INT,
+           qty        INT,
+           PRIMARY KEY(ordno, seq),
+           FOREIGN KEY (ordno)
+             REFERENCES order(ordno)
+             ON UPDATE RESTRICT
+             ON DELETE CASCADE,
+           FOREIGN KEY (itemno)
+             REFERENCES item(itemno)
+             ON UPDATE RESTRICT
+             ON DELETE CASCADE)
+             RCDFMT orddtlfm;

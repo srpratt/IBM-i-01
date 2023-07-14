@@ -1,0 +1,14 @@
+/* CONSIDER MAKING PRIMARY KEY A GENERATED ALWAYS INTEGER
+*/
+CREATE TABLE ITEM (
+    itemno      INT NOT NULL,
+    descr       VARCHAR(24),
+    qonhand     INT,
+    qonord      INT,
+    qreord      INT,
+    price       DEC(12, 3),
+    acqcst      DEC(12, 3),
+    uom         VARCHAR(12),
+    vendor1     INT,
+    PRIMARY KEY(itemno))
+    RCDFMT      itemfm;

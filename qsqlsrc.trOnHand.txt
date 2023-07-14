@@ -1,0 +1,19 @@
+0001.00                                                                                      230712 
+0002.00   CREATE OR REPLACE TRIGGER TRONHAND                                                 230712 
+0003.00     AFTER UPDATE OF qonhand ON item                                                  230712 
+0005.00     REFERENCING NEW ROW AS n                                                         230712 
+0006.00     FOR EACH ROW                                                                     230712 
+0007.00                                                                                      230712 
+0008.00   BEGIN ATOMIC                                                                       230712 
+0009.00                                                                                      230712 
+0014.00     DECLARE stampvar  TIMESTAMP;                                                     230712 
+0015.00     DECLARE new_pono  INT;                                                           230712 
+0022.00     SET stampvar = CURRENT TIMESTAMP;                                                230712 
+0027.00                                                                                      230712 
+0028.00     CASE WHEN n.qonhand <= n.qreord THEN                                             230712 
+0029.00       INSERT INTO po                                                                 230712 
+0030.00         VALUES(DEFAULT, n.vendor1, stampvar);                                        230712 
+0034.00       INSERT INTO podtl                                                              230712 
+0035.00         VALUES (IDENTITY_VAL_LOCAL(), DEFAULT, n.itemno, n.qreord);                  230712 
+0036.00     END CASE;                                                                        230712 
+0037.00   END                                                                                230712 

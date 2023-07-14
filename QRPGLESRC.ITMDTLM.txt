@@ -1,0 +1,214 @@
+      **free
+       ctl-opt nomain;
+
+
+      // input window for adding a new item
+       dcl-pr prItmDtl int(10);
+         *n ind;      // data record display only
+         *n int(10);  // item number
+       end-pr;
+
+      // procedure to get the next available item number
+       dcl-pr prNxtItm int(10);
+       end-pr;
+
+      // IBM C procedure to pause execution for n seconds
+       dcl-pr sleep int(10) extproc('sleep');
+         *n uns(10) value;
+       end-pr;
+
+       dcl-s tItmNo   int(10);
+       dcl-s tDesc    char(24);
+       dcl-s tPrice   zoned(12:3);
+       dcl-s tAcqCst  zoned(12:3);
+       dcl-s tUOM     char(12);
+       dcl-s tReord   int(10);
+       dcl-s tOnHand  int(10);
+       dcl-s tOnOrd   int(10);
+
+       // input window for adding a new item
+       dcl-proc prItmDtl export;
+
+         dcl-pi *n int(10);
+           ReadOnly ind;
+           ItemParm int(10);
+         end-pi;
+
+         dcl-f Item disk(*ext) usage(*update) keyed;
+         dcl-f ItmDtlDF workstn infds($DspInfo) qualified;
+
+         dcl-ds dsItmDtlR likerec(ITMDTLDF.ITMDTLR : *ALL) inz;
+         dcl-s  pDSItmDtlR pointer inz(%Addr(dsItmDtlR));
+         dcl-s  In89 ind based(pDSItmDtlR);
+
+         dcl-ds $DspInfo;
+           $$KeyPrs ind pos(369);
+         end-ds;
+
+        //if not defined(FKeysScanCodes)
+      /include spr3l1/cpysrc,cpFKeys
+        //endif
+
+         dcl-s RetryCount int(3) inz;
+         dcl-s tempInt10  int(10);
+         dcl-s ItemAdded  ind inz(*off);
+
+       //*In89 = ReadOnly;  // protect the screen data fields?
+         pDSItmDtlR += 1;   // point to buffer position 2 for *In89
+
+         exec sql
+           DECLARE Csr1 SCROLL CURSOR FOR
+             SELECT * FROM Item
+             WHERE Itemno = :ItemParm;
+
+         dow $$KeyPrs <> kF3 and $$KeyPrs <> kF12; // and $$KeyPrs <> kEnter;
+
+           if ItemParm > 0;   // Specific Item was passed as a parm
+             exec sql
+               OPEN Csr1;
+             exec sql
+               FETCH Csr1
+               INTO :tItmNo, :tDesc, :tOnHand, :tOnOrd, :tReord,
+                    :tPrice, :tAcqCst, :tUOM;
+             exec sql
+               CLOSE Csr1;
+           //  INTO :dsItmDtlR;
+             if tItmNo > 0;
+               dsItmDtlR.wItmNo    = tItmNo;
+               dsItmDtlR.wDesc     = tDesc;
+               dsItmDtlR.wPrice    = tPrice;
+               dsItmDtlR.wAcqCst   = tAcqCst;
+               dsItmDtlR.wUOM      = tUOM;
+               dsItmDtlR.wReord    = tReord;
+               dsItmDtlR.wOnHand   = tOnHand;
+               dsItmDtlR.wOnOrd    = tOnOrd;
+             endif;
+           endif;
+
+           // screen IO
+           In89 = ReadOnly;
+           exfmt ItmDtlDF.ItmDtlR dsItmDtlR;
+
+           if $$KeyPrs = kEnter;
+
+             // if displaying an Item and Enter hit, exit the procedure.
+             if ItemParm > 0 and ReadOnly = *on;
+               leave;
+             endif;
+
+             if ItemParm = 0;
+
+               // data edits go here
+
+               // add new item code
+               RetryCount = 0;
+               dou %subst(SQLSTATE: 1: 2) = '00' or RetryCount >= 10;
+                 tempInt10 = prNxtItm();
+                 dsItmDtlR.wItmNo = tempInt10;
+                 if dsItmDtlR.wItmNo > 0;
+                   tItmNo    = dsItmDtlR.wItmNo;
+                   tDesc     = dsItmDtlR.wDesc;
+                   tPrice    = dsItmDtlR.wPrice;
+                   tAcqCst   = dsItmDtlR.wAcqCst;
+                   tUOM      = dsItmDtlR.wUOM;
+                   tReord    = dsItmDtlR.wReord;
+                   tOnHand   = dsItmDtlR.wOnHand;
+                   tOnOrd    = dsItmDtlR.wOnOrd;
+                   exec sql
+                     INSERT INTO Item
+                     (ITEMNO, DESC, PRICE, ACQCST, UOM, QREORD, QONHAND, QONORD)
+                     VALUES(:tItmNo,
+                            :tDesc,
+                            :tPrice,
+                            :tAcqCst,
+                            :tUOM,
+                            :tReord,
+                            :tOnHand,
+                            :tOnOrd);
+      *              VALUES(dsItmDtlR.wItmNo,   // this did not work
+                 else;
+                   // show error message window - get itemno function failed
+                   leave;
+                 endif;
+                 if %subst(SQLSTATE: 1: 2) = '00';
+                   ItemAdded = *on;
+                   leave;
+                 elseif SQLCODE = -803;    // dup key error
+                   RetryCount += 1;
+                   sleep(1);  // wait 1 second and try again
+                 else;
+                   ItemAdded = *off;
+                   leave;
+                 endif;
+               enddo;
+
+             // update item code
+             else;
+               if dsItmDtlR.wItmNo > 0;
+
+                 // data edits go here
+
+                 // update the Item record.
+                 tItmNo    = dsItmDtlR.wItmNo;
+                 tDesc     = dsItmDtlR.wDesc;
+                 tPrice    = dsItmDtlR.wPrice;
+                 tAcqCst   = dsItmDtlR.wAcqCst;
+                 tUOM      = dsItmDtlR.wUOM;
+                 tReord    = dsItmDtlR.wReord;
+                 tOnHand   = dsItmDtlR.wOnHand;
+                 tOnOrd    = dsItmDtlR.wOnOrd;
+                 exec sql
+                   UPDATE Item
+                   SET
+                     ITEMNO     = :tItmNo,
+                     DESC       = :tDesc,
+                     PRICE      = :tPrice,
+                     ACQCST     = :tAcqCst,
+                     UOM        = :tUOM,
+                     QREORD     = :tReord,
+                     QONHAND    = :tOnHand,
+                     QONORD     = :tOnOrd
+                   WHERE ItemNo = :tItmNo;
+                 ItemAdded = *on;     // force redisplay in ItmMnt program
+               endif;
+             endif;
+
+             if ItemAdded = *on;
+               leave;                 // for demo purposes, exit after 1 add
+             endif;
+           endif;
+         enddo;
+
+      *  if ReadOnly = *off and ItemAdded = *on;
+           return tItmNo;
+      *  else;
+      *    return -1;
+      *  endif;
+
+       end-proc prItmDtl;
+
+      **********************************************************************
+
+       dcl-proc prNxtItm export;
+
+         dcl-pi *n int(10);
+         end-pi;
+
+         dcl-f Item disk(*ext) usage(*input) keyed;
+
+         dcl-s NewItmNo int(10) inz;
+
+       monitor;
+
+         exec sql
+           DECLARE Csr111 CURSOR FOR SELECT max(ItemNo) FROM Item;
+         exec sql
+           OPEN Csr111;
+         exec sql FETCH Csr111 INTO :NewItmNo;
+         exec sql
+           CLOSE Csr111;
+         return NewItmNo + 1;
+
+       on-error;
+       endmon;
+       end-proc prNxtItm;

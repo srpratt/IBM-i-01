@@ -1,0 +1,9 @@
+         CREATE TABLE po (
+           pono     INT NOT NULL
+             GENERATED ALWAYS AS IDENTITY  -- NOT SURE I'D USE AUTO-SEQUENCE
+               (START WITH 500             -- IF DB2 STILL DOESN'T GUARANTEE
+               INCREMENT BY 1),            -- A UNIQUE VALUE.
+           povnd    INT,
+           pots     TIMESTAMP,
+           PRIMARY  KEY(pono))
+           RCDFMT   pofm;

@@ -1,0 +1,298 @@
+      ** free
+
+       // first SQLRPGLE Subfile program.
+
+       ctl-opt actgrp(*new);
+       ctl-opt bnddir('SPR3L1/ITEMBD');
+
+       // Item File
+       dcl-f Item disk(*ext) usage(*update) keyed;
+
+       dcl-f ItmMntDF workstn infds($DspInfo) SFile(ItmMntA:SFRRN);
+
+       dcl-pr prDoOpts ind;
+         *n pointer;
+         *n like(SflSize);
+       end-pr;
+
+       dcl-pr prItmDtl int(10) extproc;
+         *n ind const;
+         *n int(10) const;
+       end-pr;
+
+       dcl-pr prNxtItm int(10) extproc;
+       end-pr;
+
+       //Function key scan codes (hexadecimal)
+       /include spr3l1/cpysrc,cpFKeys
+
+       dcl-s SflSize    int(10) inz(14);  // if redim, see dsItemRec dim(n)
+       dcl-s FirstLoad  ind inz(*on);
+       dcl-s Reload     ind inz(*off);
+       dcl-s i          int(3);
+       dcl-s botItemNo  like(ItemNo) inz;
+       dcl-s topItemNo  like(ItemNo) inz;
+       dcl-s newItemNo  like(ItemNo) inz;
+
+       dcl-ds $DspInfo;
+         $$KeyPrs ind pos(369);
+       end-ds;
+
+       dcl-ds $psds PSDS qualified;
+         $$Program char(10);
+         $$Status  zoned(5:0) pos(11);
+         $$MsgID   char(7)    pos(40);
+         $$Library char(10)   pos(81);
+         $$ErrDat  char(80)   pos(91);
+         $$RpgMsg  char(4)    pos(171);
+         $$User    char(10)   pos(254);
+         $$JobDate char(6)    pos(270);
+         $$SysDate char(10)   pos(276);
+         $$SysTime char(10)   pos(282);
+       end-ds;
+
+       dcl-ds dsItemRec qualified dim(14) inz;
+         dsItemNo  int(10);
+         dsDesc    char(24);
+         dsQOnHand int(10);
+         dsQOnOrd  int(10);
+         dsQReord  int(10);
+         dsPrice   packed(12:3);
+         dsAcqCst  packed(12:3);
+         dsUOM     char(12);
+       end-ds;
+
+       dcl-ds dsOptions qualified dim(14) inz;
+         dsOption  char(1);
+         dsOItemNo int(10);
+       end-ds;
+       dcl-s pDSOptions pointer inz(%Addr(dsOptions));
+
+      ****************************
+       exec sql
+         DECLARE Csr1 SCROLL CURSOR FOR
+           SELECT * FROM Item
+           ORDER BY ItemNo;
+       exec sql
+         DECLARE CsrUp SCROLL CURSOR FOR
+         SELECT * FROM Item
+         WHERE ItemNo <= :topItemNo
+         ORDER BY ItemNo DESC
+         LIMIT 14;
+       exec sql
+         DECLARE CsrDown SCROLL CURSOR FOR
+         SELECT * FROM Item
+         WHERE ItemNo >= :botItemNo
+         ORDER BY ItemNo;
+
+       exec sql OPEN Csr1;
+
+
+       dow $$KeyPrs <> kF3 and $$KeyPrs <> kF12;
+
+         // process any Options user selected
+         if $$KeyPrs = kEnter;
+           exsr srOptions;
+           //iter;
+         endif;
+
+         // F6 pressed for Add New Item
+         if $$KeyPrs = kF6;
+           exsr srNewItm;
+         endif;
+
+         *in60 = *on;  // Option field Nondisplay
+
+         //  clear the subfile
+         if $$KeyPrs = kRollUp or $$KeyPrs = kRollDn or Reload = *on;
+           clear ItmMntA;
+           *in43 = *on;
+           write ItmMntB;
+           *in43 = *off;
+         endif;
+
+         clear dsItemRec;
+
+         //  Roll down (page up)
+         if $$KeyPrs = kRollDn;
+           exsr srPageUp;
+         endif;
+
+         //  Roll up (page down) or first load of the subfile
+         if $$KeyPrs = kRollUp or FirstLoad = *on or Reload = *on;
+           exsr srPageDown;
+         endif;
+
+         //  load the subfile from the input data structure
+         sfrrn = 0;
+         for i = 1 to SflSize;
+           if dsItemRec(i).dsItemNo < 1;  // no more data in the DS
+             leave;
+           endif;
+           botItemNo = dsItemRec(i).dsItemNo;
+           if i = 1;
+             topItemNo = dsItemRec(i).dsItemNo;
+           endif;
+           botItemNo = dsItemRec(i).dsItemNo;
+           sItemNo   = dsItemRec(i).dsItemNo;
+           sDesc     = dsItemRec(i).dsDesc;
+           sUOM      = %subst(dsItemRec(i).dsUOM : 1: 10);
+           sPrice    = dsItemRec(i).dsPrice;
+           sAcqCst   = dsItemRec(i).dsAcqCst;
+           sQOnHand  = dsItemRec(i).dsQOnHand;
+           *in60 = *off;  // Option field Nondisplay off
+           sfrrn += 1;
+           write ItmMntA;
+           *in60 = *on;   // Option field Nondisplay
+         endfor;
+
+         //  Do screen IO
+         *in40 = *on;     //  sfldsp
+         *in41 = *on;     //  sfldspctl
+         if i = SflSize + 1;
+           *in46 = *off;     //  sflend  'bottom'
+         elseif i < SflSize;
+           *in46 = *on;      //          'more...'
+           botItemNo = topItemNo;
+         endif;
+         write itmmntc;
+         exfmt itmmntb;
+         *in40 = *off;
+         *in41 = *off;
+         *In70 = *off;
+
+
+       enddo;
+
+       exec sql CLOSE Csr1;
+       exec sql CLOSE CsrUp;
+       exec sql CLOSE CsrDown;
+
+       *InLR = *on;
+       Return;
+      *-----------------------------------------------------
+
+       begsr *pssr;
+         monitor;
+           exec sql CLOSE Csr1;
+           exec sql CLOSE CsrUp;
+           exec sql CLOSE CsrDown;
+         on-error;
+         endmon;
+       endsr;
+
+       begsr srNewItm;
+         // F6 pressed for adding new Item
+         newItemNo = prItmDtl(*off : 0);
+         if newItemNo > 0;
+           botItemNo = newItemNo;  // reload subfile with new item first
+           fMessage = 'New item ' + %char(newItemNo) + ' was added.';
+           *In70 = *on;
+      *    write itmmntc;          // display the item added message
+      *    *In70 = *off;
+         else;
+           botItemNo = topItemNo;  // reload subfile already shown
+         endif;
+         Reload = *on;             // force subfile reload
+       endsr;
+
+       begsr srOptions;
+         // process any Options user selected
+         clear dsOptions;
+         for i = 1 to SflSize;
+           readc(e) ItmMntA;
+           if %eof() or %error() or SItemNo < 1; // no more SF data
+             leave;
+           else;
+             if SOpt = '2' or SOpt = '5';
+               dsOptions(sfrrn).dsOItemNo = SItemNo;
+               dsOptions(sfrrn).dsOption  = SOpt;
+               SOpt = *blank;
+             endif;
+      *      *in60 = *off;  // Option field Nondisplay off
+      *      update ItmMntA;
+           endif;
+         endfor;
+         if i > 1;
+           DoOptions(pDSOptions : SflSize);
+           botItemNo = topItemNo;
+           Reload = *on;
+         endif;
+       endsr;
+
+       begsr srPageUp;
+         // Page up to previous subfile records
+         //  There must be a more elegant way to do this with SQLRPG.
+         //  Could not get Fetch Prior to work.
+         monitor;
+           exec sql CLOSE CsrUp;
+           exec sql OPEN CsrUp;      // order by ItemNo descending
+           exec sql
+             FETCH CsrUp
+             FOR :SflSize ROWS
+             INTO :dsItemRec;
+           // if a whole page not loaded, load from beginning of file
+           if %subst(SQLSTATE: 1: 2) <> '00' or SQLERRD(3) < SflSize;
+             clear dsItemRec;
+             exec sql CLOSE Csr1;
+             exec sql OPEN Csr1;
+             exec sql
+               FETCH FIRST FROM Csr1
+               FOR :SflSize ROWS
+               INTO :dsItemRec;
+           endif;
+           SORTA %subarr(dsItemRec(*).dsItemNo : 1 : SflSize); //sort ascending
+         on-error;
+         //continue;
+         endmon;
+       endsr;
+
+       begsr srPageDown;
+         // Page down to next subfile records
+         FirstLoad = *off;
+         Reload = *off;
+         monitor;
+           exec sql CLOSE CsrDown;
+           exec sql OPEN CsrDown;
+           exec sql
+             FETCH CsrDown
+             FOR :SflSize ROWS
+             INTO :dsItemRec;
+         on-error;
+      //   continue;
+         endmon;
+       endsr;
+
+
+       dcl-proc DoOptions;
+
+         dcl-pi *n ind;
+           pDSOptions pointer;
+           SflSize int(10);
+         end-pi;
+
+         dcl-ds dsOptions dim(14) based(pDSOptions) qualified;
+           dsOption char(1);
+           dsItemNo int(10);
+         end-ds;
+
+         dcl-s Option char(1);
+         dcl-s ItemNo int(10);
+         dcl-s RtnCde ind inz(*off);
+
+         for i = 1 to SflSize;
+           Option = dsOptions(i).dsOption;
+           ItemNo = DSOptions(i).dsItemNo;
+           if Option = '2';
+             prItmDtl(*off : ItemNo);
+       //    RtnCde = *on;
+           elseif Option = '5';
+             prItmDtl(*on : ItemNo);
+           endif;
+         endfor;
+
+         RtnCde = *on;
+         return RtnCde;
+
+       end-proc DoOptions;
+

@@ -1,0 +1,83 @@
+     A*%%TS  SD  20230707  155952  SPR30627    REL-V7R1M0  5770-WDS
+     A*
+     A*
+     A*%%EC
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      PRINT
+     A                                      HELP
+     A*
+     A*  SUBFILE RECORD FORMAT.
+     A*
+     A          R ITMMNTA                   SFL
+     A*%%TS  SD  20230707  155952  SPR30627    REL-V7R1M0  5770-WDS
+     A  44                                  SFLNXTCHG
+     A            SFRRN          5S 0H
+     A            SOPT           1A  B  7  4
+     A  60                                  DSPATR(ND)
+     A  61                                  DSPATR(PC)
+     A  61                                  DSPATR(RI)
+     A            SITEMNO        6Y 0O  7  9EDTCDE(Z)
+     A            SDESC         24A  O  7 18
+     A            SUOM          10A  O  7 43
+     A            SPRICE         8Y 3O  7 54EDTWRD('      .  ')
+     A            SACQCST        8Y 2O  7 64EDTWRD('      .  ')
+     A            SQONHAND       5Y 0O  7 76EDTCDE(Z)
+     A*
+     A*  SUBFILE CONTROL RECORD FORMAT.
+     A*
+     A          R ITMMNTB                   SFLCTL(ITMMNTA)
+     A*%%TS  SD  20230628  215152  SPR30627    REL-V7R1M0  5770-WDS
+     A                                      SFLSIZ(0014)
+     A                                      SFLPAG(0014)
+     A                                      OVERLAY
+     A                                      BLINK
+     A                                      CF03
+     A                                      CF06
+     A                                      CF12
+     A                                      ROLLUP
+     A                                      ROLLDOWN
+     A                                      CSRLOC(ROW        COL)
+     A  40                                  SFLDSP
+     A  41                                  SFLDSPCTL
+     A  42                                  SFLINZ
+     A  43                                  SFLCLR
+     A  46                                  SFLEND(*MORE)
+     A            ROW            3S 0H
+     A            COL            3S 0H
+     A                                  1  2'ITMMNT'
+     A                                  1 36'S. Pratt'
+     A                                      DSPATR(HI)
+     A                                  1 73DATE
+     A                                      EDTCDE(Y)
+     A                                  2 30'Demo Item Maintenance'
+     A                                      DSPATR(HI)
+     A                                  2 73TIME
+     A                                  3  2'Type option, press Enter.'
+     A                                  4  3'Options:  2=Edit  5=Display'
+     A                                      COLOR(BLU)
+     A                                  6  3'OPT'
+     A                                      DSPATR(HI)
+     A                                  6  8'Item No'
+     A                                      DSPATR(HI)
+     A                                  6 18'Description'
+     A                                      DSPATR(HI)
+     A                                  2  2USER
+     A                                  6 43'UOM'
+     A                                      DSPATR(HI)
+     A                                  6 58'Price'
+     A                                      DSPATR(HI)
+     A                                  6 65'Acq Cost'
+     A                                      DSPATR(HI)
+     A                                  6 74'On Hand'
+     A                                      DSPATR(HI)
+      *  FOOTER RECORD.
+     A          R ITMMNTC
+      *
+     A                                      BLINK
+     A*                                     CLRL(*ALL)
+     A                                      OVERLAY
+     A                                 22  3'F3=Exit  F6=New Item'
+     A                                      COLOR(BLU)
+     A
+     A  70        FMESSAGE      70A    23  3
+     A                                      DSPATR(HI)

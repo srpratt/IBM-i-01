@@ -1,0 +1,18 @@
+        CREATE TABLE podtl (
+          pono       INT NOT NULL,
+          seq        INT NOT NULL
+            GENERATED ALWAYS AS IDENTITY
+              (START WITH 500
+              INCREMENT BY 1),
+          itemno     INT,
+          qty        INT,
+          PRIMARY KEY(pono, seq),
+          FOREIGN KEY (pono)
+            REFERENCES po(pono)
+            ON UPDATE RESTRICT
+            ON DELETE CASCADE,
+          FOREIGN KEY (itemno)
+            REFERENCES item(itemno)
+            ON UPDATE RESTRICT
+            ON DELETE CASCADE)
+            RCDFMT   podtlfm;

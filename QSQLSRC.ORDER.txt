@@ -1,0 +1,6 @@
+         CREATE TABLE order (
+           ordno      INT NOT NULL,
+           custno      INT,
+           ordts       TIMESTAMP,
+           PRIMARY     KEY(ordno))
+           RCDFMT      orderfm;

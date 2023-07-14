@@ -1,0 +1,53 @@
+     A*%%TS  SD  20230706  165429  SPR30627    REL-V7R1M0  5770-WDS
+     A*
+     A*
+     A*%%EC
+     A                                      DSPSIZ(24 80 *DS3)
+     A                                      PRINT
+     A                                      HELP
+     A*
+     A*  ADD/UPDATE/DISPLAY ITEM.
+     A*
+     A          R ITMDTLR
+     A*%%TS  SD  20230706  165429  SPR30627    REL-V7R1M0  5770-WDS
+     A                                      WINDOW(3 8 18 45)
+     A                                      CF03
+     A                                      CF12
+     A                                      BLINK
+     A                                      OVERLAY
+     A                                  1 16'ITEM MAINTENANCE'
+     A                                      DSPATR(HI)
+     A                                  3  1'ITEM NO . . . . :'
+     A                                      DSPATR(HI)
+     A            WITMNO        10Y 0B  3 19EDTCDE(Z)
+     A N88                                  DSPATR(PR)
+     A                                  5  1'DESCRIPTION . . :'
+     A                                      DSPATR(HI)
+     A            WDESC         24A  B  5 19
+     A  89                                  DSPATR(PR)
+     A                                  7  1'PRICE . . . . . :'
+     A                                      DSPATR(HI)
+     A            WPRICE         9Y 2B  7 19EDTCDE(Q)
+     A  89                                  DSPATR(PR)
+     A                                  9  1'ACQ COST  . . . :'
+     A                                      DSPATR(HI)
+     A            WACQCST        9Y 2B  9 19EDTCDE(Q)
+     A  89                                  DSPATR(PR)
+     A                                 11  1'UNIT OF MEASURE :'
+     A                                      DSPATR(HI)
+     A            WUOM          12A  B 11 19
+     A  89                                  DSPATR(PR)
+     A                                 13  1'REORDER QTY . . :'
+     A                                      DSPATR(HI)
+     A            WREORD         7Y 0B 13 19EDTCDE(Q)
+     A  89                                  DSPATR(PR)
+     A                                 15  1'ON HAND/ON ORDER:'
+     A                                      DSPATR(HI)
+     A            WONHAND        9Y 0B 15 19EDTCDE(Q)
+     A  89                                  DSPATR(PR)
+     A            WONORD         9Y 0B 15 31EDTCDE(Q)
+     A  89                                  DSPATR(PR)
+     A* 70                             17 12'ITEM ADDED/UPDATED'
+     A*                                     DSPATR(HI)
+     A                                 17  3'F3=EXIT'
+     A                                      COLOR(BLU)
