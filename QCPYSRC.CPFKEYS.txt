@@ -1,4 +1,4 @@
-      */define FKeysScanCodes
+      /define FKeysScanCodes
        //Function key scan codes (hexadecimal)
        dcl-c kEnter  x'F1';
        dcl-c kRollUp x'F5';
