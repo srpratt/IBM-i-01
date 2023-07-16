@@ -1,4 +1,9 @@
                                                                                 
+      
+
+      * PLEASE NOTE THAT THIS CODE IS RPG/400.  FOR SQLRPGLE SOURCE SEE THE ITM*.TXT FILES BELOW.
+
+
       * JEGD54 Select a record from FPRXLKTK to edit.                           
       * Created 10/20/97 by Mason Associates - Sam Pratt                        
                                                                                 
